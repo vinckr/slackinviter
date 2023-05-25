@@ -18,8 +18,13 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	badge "github.com/narqo/go-badge"
 	"github.com/nlopes/slack"
+	ory "github.com/ory/client-go"
 	"github.com/paulbellamy/ratecounter"
 )
+
+type App struct {
+	ory *ory.APIClient
+}
 
 var indexTemplate = template.Must(template.New("index.tmpl").ParseFiles("templates/index.tmpl"))
 
@@ -114,12 +119,64 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	buf.WriteTo(w)
 }
 
+// save the cookies for any upstream calls to the Ory apis
+func withCookies(ctx context.Context, v string) context.Context {
+	return context.WithValue(ctx, "req.cookies", v)
+}
+
+func getCookies(ctx context.Context) string {
+	return ctx.Value("req.cookies").(string)
+}
+
+// save the session to display it on the dashboard
+func withSession(ctx context.Context, v *ory.Session) context.Context {
+	return context.WithValue(ctx, "req.session", v)
+}
+
+func getSession(ctx context.Context) *ory.Session {
+	return ctx.Value("req.session").(*ory.Session)
+}
+
+func (app *App) sessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		// set the cookies on the ory client
+		var cookies string
+
+		// this example passes all request.Cookies
+		// to `ToSession` function
+		//
+		// However, you can pass only the value of
+		// ory_session_projectid cookie to the endpoint
+		cookies = request.Header.Get("Cookie")
+
+		// check if we have a session
+		session, _, err := app.ory.FrontendApi.ToSession(request.Context()).Cookie(cookies).Execute()
+		if (err != nil && session == nil) || (err == nil && !*session.Active) {
+			// this will redirect the user to the managed Ory Login UI
+			http.Redirect(writer, request, "https://console.ory.sh/login?return_to=https://slack.ory.sh/", http.StatusSeeOther)
+			return
+		}
+
+		ctx := withCookies(request.Context(), cookies)
+		ctx = withSession(ctx, session)
+
+		// continue to the requested page
+		next.ServeHTTP(writer, request.WithContext(ctx))
+		return
+	}
+}
+
 func main() {
 	go pollSlack()
+	config := ory.NewConfiguration()
+	config.Servers = ory.ServerConfigurations{{URL: "https://project.console.ory.sh"}}
+	app := &App{
+		ory: ory.NewAPIClient(config),
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/invite/", handleInvite)
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
-	mux.HandleFunc("/", enforceHTTPSFunc(homepage))
+	mux.HandleFunc("/", app.sessionMiddleware(enforceHTTPSFunc(homepage)))
 	mux.HandleFunc("/badge.svg", handleBadge)
 	mux.Handle("/debug/vars", http.DefaultServeMux)
 	err := http.ListenAndServe(":"+c.Port, handlers.CombinedLoggingHandler(os.Stdout, mux))
