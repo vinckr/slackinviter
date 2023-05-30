@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"expvar"
 	"flag"
 	"fmt"
@@ -53,6 +54,11 @@ var (
 
 var c Specification
 
+type SessionData struct {
+	Email string
+	// Add other fields as needed
+}
+
 // Specification is the config struct
 type Specification struct {
 	Port           string `envconfig:"PORT" required:"true"`
@@ -60,6 +66,7 @@ type Specification struct {
 	CaptchaSecret  string `required:"true"`
 	SlackToken     string `required:"true"`
 	CocUrl         string `required:"false" default:"http://coc.golangbridge.org/"`
+	SessionData    []byte
 	EnforceHTTPS   bool
 	Debug          bool // toggles nlopes/slack client's debug flag
 }
@@ -153,7 +160,7 @@ func (app *App) sessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		session, _, err := app.ory.FrontendApi.ToSession(request.Context()).Cookie(cookies).Execute()
 		if (err != nil && session == nil) || (err == nil && !*session.Active) {
 			// this will redirect the user to the managed Ory Login UI
-			http.Redirect(writer, request, "https://console.ory.sh/login?return_to=https://slack.ory.sh/", http.StatusSeeOther)
+			http.Redirect(writer, request, "http://localhost:4000/ui/login", http.StatusSeeOther)
 			return
 		}
 
@@ -262,6 +269,12 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 	hitsPerMinute.Set(counter.Rate())
 	requests.Add(1)
 
+	// Get session data
+	session, session_err := json.Marshal(getSession(r.Context()))
+	if session_err != nil {
+		http.Error(w, session_err.Error(), http.StatusInternalServerError)
+		return
+	}
 	var buf bytes.Buffer
 	err := indexTemplate.Execute(
 		&buf,
@@ -269,14 +282,16 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 			SiteKey,
 			UserCount,
 			ActiveCount string
-			Team   *team
-			CocUrl string
+			Team        *team
+			CocUrl      string
+			SessionData []byte
 		}{
 			c.CaptchaSitekey,
 			userCount.String(),
 			activeUserCount.String(),
 			ourTeam,
 			c.CocUrl,
+			session,
 		},
 	)
 	if err != nil {
@@ -284,6 +299,8 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error rendering template :-(", http.StatusInternalServerError)
 		return
 	}
+	fmt.Println("Session Data:")
+	fmt.Println(session)
 	// Set the header and write the buffer to the http.ResponseWriter
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	buf.WriteTo(w)
