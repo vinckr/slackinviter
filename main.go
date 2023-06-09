@@ -144,6 +144,25 @@ func getSession(ctx context.Context) *ory.Session {
 	return ctx.Value("req.session").(*ory.Session)
 }
 
+func main() {
+	go pollSlack()
+	config := ory.NewConfiguration()
+	config.Servers = ory.ServerConfigurations{{URL: "https://auth.slackinviter.vinckr.com"}}
+	app := &App{
+		ory: ory.NewAPIClient(config),
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/invite/", handleInvite)
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
+	mux.HandleFunc("/", app.sessionMiddleware(enforceHTTPSFunc(homepage)))
+	mux.HandleFunc("/badge.svg", handleBadge)
+	mux.Handle("/debug/vars", http.DefaultServeMux)
+	err := http.ListenAndServe(":"+c.Port, handlers.CombinedLoggingHandler(os.Stdout, mux))
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+}
+
 func (app *App) sessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		// set the cookies on the ory client
@@ -164,7 +183,7 @@ func (app *App) sessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		if err != nil && session == nil {
 			// this will redirect the user to the managed Ory Login UI
 			fmt.Println("Session Data:", session)
-			http.Redirect(writer, request, "https://practical-swirles-whg26u2ofh.projects.oryapis.com/ui/login", http.StatusSeeOther)
+			http.Redirect(writer, request, "https://auth.slackinviter.vinckr.com/ui/login", http.StatusSeeOther)
 			return
 		}
 
@@ -174,25 +193,6 @@ func (app *App) sessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		// continue to the requested page
 		next.ServeHTTP(writer, request.WithContext(ctx))
 		return
-	}
-}
-
-func main() {
-	go pollSlack()
-	config := ory.NewConfiguration()
-	config.Servers = ory.ServerConfigurations{{URL: "https://practical-swirles-whg26u2ofh.projects.oryapis.com"}}
-	app := &App{
-		ory: ory.NewAPIClient(config),
-	}
-	mux := http.NewServeMux()
-	mux.HandleFunc("/invite/", handleInvite)
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
-	mux.HandleFunc("/", app.sessionMiddleware(enforceHTTPSFunc(homepage)))
-	mux.HandleFunc("/badge.svg", handleBadge)
-	mux.Handle("/debug/vars", http.DefaultServeMux)
-	err := http.ListenAndServe(":"+c.Port, handlers.CombinedLoggingHandler(os.Stdout, mux))
-	if err != nil {
-		log.Fatal(err.Error())
 	}
 }
 
