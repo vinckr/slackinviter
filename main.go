@@ -154,6 +154,7 @@ func (app *App) sessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		//
 		// However, you can pass only the value of
 		// ory_session_projectid cookie to the endpoint
+		fmt.Println("Request:", request)
 		cookies = request.Header.Get("Cookie")
 		fmt.Println("Cookies:", cookies)
 		// check if we have a session
