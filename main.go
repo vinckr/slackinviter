@@ -160,7 +160,7 @@ func (app *App) sessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		session, _, err := app.ory.FrontendApi.ToSession(request.Context()).Cookie(cookies).Execute()
 		fmt.Println("Error:", err)
 		fmt.Println("Session:", session)
-		if (err != nil && session == nil) || (err == nil && !*session.Active) {
+		if err != nil && session == nil {
 			// this will redirect the user to the managed Ory Login UI
 			fmt.Println("Session Data:", session)
 			http.Redirect(writer, request, "https://practical-swirles-whg26u2ofh.projects.oryapis.com/ui/login", http.StatusSeeOther)
