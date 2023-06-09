@@ -158,8 +158,11 @@ func (app *App) sessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		// check if we have a session
 		session, _, err := app.ory.FrontendApi.ToSession(request.Context()).Cookie(cookies).Execute()
+		fmt.Println("Error:", err)
+		fmt.Println("Session:", session)
 		if (err != nil && session == nil) || (err == nil && !*session.Active) {
 			// this will redirect the user to the managed Ory Login UI
+			fmt.Println("Session Data:", session)
 			http.Redirect(writer, request, "http://localhost:4000/ui/login", http.StatusSeeOther)
 			return
 		}
@@ -176,7 +179,7 @@ func (app *App) sessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
 func main() {
 	go pollSlack()
 	config := ory.NewConfiguration()
-	config.Servers = ory.ServerConfigurations{{URL: "https://project.console.ory.sh"}}
+	config.Servers = ory.ServerConfigurations{{URL: "http://localhost:4000"}}
 	app := &App{
 		ory: ory.NewAPIClient(config),
 	}
@@ -299,8 +302,7 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error rendering template :-(", http.StatusInternalServerError)
 		return
 	}
-	fmt.Println("Session Data:")
-	fmt.Println(session)
+
 	// Set the header and write the buffer to the http.ResponseWriter
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	buf.WriteTo(w)
