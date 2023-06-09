@@ -163,7 +163,7 @@ func (app *App) sessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		if (err != nil && session == nil) || (err == nil && !*session.Active) {
 			// this will redirect the user to the managed Ory Login UI
 			fmt.Println("Session Data:", session)
-			http.Redirect(writer, request, "http://localhost:4000/ui/login", http.StatusSeeOther)
+			http.Redirect(writer, request, "https://practical-swirles-whg26u2ofh.projects.oryapis.com/ui/login", http.StatusSeeOther)
 			return
 		}
 
@@ -179,7 +179,7 @@ func (app *App) sessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
 func main() {
 	go pollSlack()
 	config := ory.NewConfiguration()
-	config.Servers = ory.ServerConfigurations{{URL: "http://localhost:4000"}}
+	config.Servers = ory.ServerConfigurations{{URL: "https://practical-swirles-whg26u2ofh.projects.oryapis.com"}}
 	app := &App{
 		ory: ory.NewAPIClient(config),
 	}
