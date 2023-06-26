@@ -181,9 +181,16 @@ func (app *App) sessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		fmt.Println("Error:", err)
 		fmt.Println("Session:", session)
 		if err != nil && session == nil {
-			// this will redirect the user to the managed Ory Login UI
-			fmt.Println("Session Data:", session)
-			http.Redirect(writer, request, "https://auth.slackinviter.vinckr.com/ui/login", http.StatusSeeOther)
+			// Render a separate page with a button to redirect the user to the login page
+			writer.WriteHeader(http.StatusOK)
+			writer.Header().Set("Content-Type", "text/html; charset=utf-8")
+			fmt.Fprint(writer, "<html><body>")
+			fmt.Fprint(writer, "<h1>No session found</h1>")
+			fmt.Fprint(writer, "<p>Please click the button below to log in:</p>")
+			fmt.Fprint(writer, "<form action=\"https://auth.slackinviter.vinckr.com/ui/login\" method=\"GET\">")
+			fmt.Fprint(writer, "<input type=\"submit\" value=\"Login\">")
+			fmt.Fprint(writer, "</form>")
+			fmt.Fprint(writer, "</body></html>")
 			return
 		}
 
