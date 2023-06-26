@@ -306,7 +306,6 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error rendering template :-(", http.StatusInternalServerError)
 		return
 	}
-
 	// Set the header and write the buffer to the http.ResponseWriter
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	buf.WriteTo(w)
