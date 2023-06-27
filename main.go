@@ -148,7 +148,7 @@ func getSession(ctx context.Context) *ory.Session {
 func main() {
 	go pollSlack()
 	config := ory.NewConfiguration()
-	config.Servers = ory.ServerConfigurations{{URL: "https://auth.slackinviter.vinckr.com"}}
+	config.Servers = ory.ServerConfigurations{{URL: "https://project.console.ory.sh"}}
 	app := &App{
 		ory: ory.NewAPIClient(config),
 	}
