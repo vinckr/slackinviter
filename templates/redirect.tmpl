@@ -12,9 +12,7 @@
             </div>
             <h2>No active Ory Network session found</h2>
             <p>To access the Ory Community Slack, please sign in with your Ory account to receive your invite.</p>
-        <form action="https://auth.slackinviter.vinckr.com/ui/login?return_to=https://slackinviter.vinckr.com/" method="GET">
-            <button class="button loading" disabled>Log in to Ory Network</button>
-        </form>
+            <a href="https://auth.slackinviter.vinckr.com/ui/login?return_to=https://slackinviter.vinckr.com/" class="login loading">Log in to Ory Network</a>
             <style>
                 .splash {
                     width: 300px;
@@ -71,7 +69,7 @@
                     background: none
                 }
 
-                button {
+                .login {
                     color: #fff;
                     font-weight: bold;
                     border-width: 0;
@@ -84,29 +82,15 @@
                     transition: background-color 150ms ease-in, color 150ms ease-in
                 }
 
-                button.loading {
+                login.loading {
                     pointer-events: none
                 }
 
-                button:disabled {
+                login:disabled {
                     color: #9B9B9B;
                     background-color: #D6D6D6;
                     cursor: default;
                     pointer-events: none
-                }
-
-                button.error {
-                    background-color: #F4001E;
-                    text-transform: none
-                }
-
-                button.success:disabled {
-                    color: #fff;
-                    background-color: #68C200
-                }
-
-                button:not(.disabled):active {
-                    background-color: #7A002F
                 }
 
                 b {
