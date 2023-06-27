@@ -15,7 +15,7 @@
                 <b class="active">{{.ActiveCount}}</b> users online now of <b class="total">{{.UserCount}}</b> registered.
             </p>
             <form>
-                <input autofocus="true" class="form-item" name="email" placeholder="you@yourdomain.com" type="email" value="{{ .SessionData.Email }}">
+                <input type="hidden" name="email" type="email" value="{{ .SessionData.Email }}">
                 <input autofocus="true" class="form-item" name="fname" placeholder="First name" type="text">
                 <input autofocus="true" class="form-item" name="lname" placeholder="Last name" type="text" value="{{ .SessionData.Name }}">
                 <div class="coc">
@@ -59,7 +59,7 @@
 
                 .logo {
                     width: 96px;
-                    height: 48px;
+                    height: 96px;
                     display: inline-block;
                     background-size: cover;
                     margin-left: 0.3em
@@ -135,7 +135,7 @@
                     color: #fff;
                     font-weight: bold;
                     border-width: 0;
-                    background: #E01563;
+                    background: #302e8e;
                     text-transform: uppercase;
                     cursor: pointer;
                     appearence: none;
