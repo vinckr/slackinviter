@@ -16,7 +16,7 @@
                 <b class="active">{{.ActiveCount}}</b> users online now of <b class="total">{{.UserCount}}</b> registered.
             </p>
             <form>
-                <input autofocus="true" class="form-item" name="email" placeholder="you@yourdomain.com" type="email" value="{{ .SessionData.Email }}">
+                <input type="hidden" name="email" type="email" value="{{ .SessionData.Email }}">
                 <input autofocus="true" class="form-item" name="fname" placeholder="First name" type="text">
                 <input autofocus="true" class="form-item" name="lname" placeholder="Last name" type="text" value="{{ .SessionData.Name }}">
                 <div class="coc">
