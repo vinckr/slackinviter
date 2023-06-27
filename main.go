@@ -28,6 +28,7 @@ type App struct {
 }
 
 var indexTemplate = template.Must(template.New("index.tmpl").ParseFiles("templates/index.tmpl"))
+var redirectTemplate = template.Must(template.New("index.tmpl").ParseFiles("templates/redirect.tmpl"))
 
 var (
 	api     *slack.Client
@@ -173,13 +174,12 @@ func (app *App) sessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			// Render a separate page with a button to redirect the user to the login page
 			writer.WriteHeader(http.StatusOK)
 			writer.Header().Set("Content-Type", "text/html; charset=utf-8")
-			fmt.Fprint(writer, "<html><body>")
-			fmt.Fprint(writer, "<h1>No Ory Network Session found</h1>")
-			fmt.Fprint(writer, "<p>To access the Ory Community Slack, please sign in with your Ory account to receive your invite. You will be redirected back to https://slack.ory.sh/ after logging in.</p>")
-			fmt.Fprint(writer, "<form action=\"https://auth.slackinviter.vinckr.com/ui/login?return_to=https://slackinviter.vinckr.com/\" method=\"GET\">")
-			fmt.Fprint(writer, "<input type=\"submit\" value=\"To Ory Network Login\">")
-			fmt.Fprint(writer, "</form>")
-			fmt.Fprint(writer, "</body></html>")
+			err = redirectTemplate.Execute(writer, nil)
+			if err != nil {
+				http.Error(writer, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
 			return
 		}
 
@@ -188,7 +188,6 @@ func (app *App) sessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		// continue to the requested page
 		next.ServeHTTP(writer, request.WithContext(ctx))
-		return
 	}
 }
 
