@@ -57,7 +57,7 @@ var c Specification
 
 type SessionData struct {
 	Email string
-	// Add other fields as needed
+	Name  string
 }
 
 // Specification is the config struct
@@ -273,6 +273,7 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 	traits := session.Identity.Traits.(map[string]interface{})
 	sessionData := &SessionData{
 		Email: traits["email"].(string),
+		Name:  traits["name"].(string),
 	}
 
 	var buf bytes.Buffer

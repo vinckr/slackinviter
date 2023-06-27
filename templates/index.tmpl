@@ -18,7 +18,7 @@
             <form>
                 <input autofocus="true" class="form-item" name="email" placeholder="you@yourdomain.com" type="email" value="{{ .SessionData.Email }}">
                 <input autofocus="true" class="form-item" name="fname" placeholder="First name" type="text">
-                <input autofocus="true" class="form-item" name="lname" placeholder="Last name" type="text">
+                <input autofocus="true" class="form-item" name="lname" placeholder="Last name" type="text" value="{{ .SessionData.Name }}">
                 <div class="coc">
                     <label>
                         <input name="coc" type="checkbox" value="1">
