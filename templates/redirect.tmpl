@@ -8,7 +8,6 @@
         <div class="splash">
             <div class="logos">
                 <div class="logo org"></div>
-                <div class="logo slack"></div>
             </div>
             <h2>No active Ory Network session found</h2>
             <p>To access the Ory Community Slack, please sign in with your Ory account to receive your invite.</p>
@@ -37,27 +36,15 @@
                 }
 
                 .logo {
-                    width: 48px;
+                    width: 96px;
                     height: 48px;
                     display: inline-block;
                     background-size: cover;
                     margin-left: 0.3em
                 }
 
-                .logo.slack {
-                    background-image: url(static/slack.svg)
-                }
-
-                .logo.org::after {
-                    position: absolute;
-                    display: block;
-                    content: "+";
-                    top: 15px;
-                    left: 0;
-                    width: 300px;
-                    text-align: center;
-                    color: #D6D6D6;
-                    font: 15px Helvetica Neue
+                .logo.org {
+                    background-image: url(static/ory-logo.svg)
                 }
 
                 p {
