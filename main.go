@@ -28,7 +28,7 @@ type App struct {
 }
 
 var indexTemplate = template.Must(template.New("index.tmpl").ParseFiles("templates/index.tmpl"))
-var redirectTemplate = template.Must(template.New("index.tmpl").ParseFiles("templates/redirect.tmpl"))
+var redirectTemplate = template.Must(template.New("redirect.tmpl").ParseFiles("templates/redirect.tmpl"))
 
 var (
 	api     *slack.Client
