@@ -66,7 +66,7 @@ type Specification struct {
 	CaptchaSecret  string `required:"true"`
 	SlackToken     string `required:"true"`
 	CocUrl         string `required:"false" default:"http://coc.golangbridge.org/"`
-	SessionData    []byte
+	SessionData    json.RawMessage
 	EnforceHTTPS   bool
 	Debug          bool // toggles nlopes/slack client's debug flag
 }
@@ -165,22 +165,11 @@ func main() {
 
 func (app *App) sessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		// set the cookies on the ory client
-		var cookies string
-
-		// this example passes all request.Cookies
-		// to `ToSession` function
-		//
-		// However, you can pass only the value of
-		// ory_session_projectid cookie to the endpoint
-		fmt.Println("Request:", request)
-		cookies = request.Header.Get("Cookie")
-		fmt.Println("Cookies:", cookies)
+		// this passes all request.Cookies to `ToSession` function
+		cookies := request.Header.Get("Cookie")
 		// check if we have a session
 		session, _, err := app.ory.FrontendApi.ToSession(request.Context()).Cookie(cookies).Execute()
-		fmt.Println("Error:", err)
-		fmt.Println("Session:", session)
-		if err != nil && session == nil {
+		if (err != nil && session == nil) || (err == nil && !*session.Active) {
 			// Render a separate page with a button to redirect the user to the login page
 			writer.WriteHeader(http.StatusOK)
 			writer.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -281,9 +270,9 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 	requests.Add(1)
 
 	// Get session data
-	session, session_err := json.Marshal(getSession(r.Context()))
-	if session_err != nil {
-		http.Error(w, session_err.Error(), http.StatusInternalServerError)
+	session, error := json.Marshal(getSession(r.Context()))
+	if error != nil {
+		http.Error(w, error.Error(), http.StatusInternalServerError)
 		return
 	}
 	var buf bytes.Buffer
