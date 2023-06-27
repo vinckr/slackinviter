@@ -57,7 +57,7 @@ var c Specification
 
 type SessionData struct {
 	Email string
-	// Add other fields as needed
+	Name  string
 }
 
 // Specification is the config struct
@@ -269,11 +269,13 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 	requests.Add(1)
 
 	// Get session data
-	session, error := json.Marshal(getSession(r.Context()))
-	if error != nil {
-		http.Error(w, error.Error(), http.StatusInternalServerError)
-		return
+	session := getSession(r.Context())
+	traits := session.Identity.Traits.(map[string]interface{})
+	sessionData := &SessionData{
+		Email: traits["email"].(string),
+		Name:  traits["name"].(string),
 	}
+
 	var buf bytes.Buffer
 	err := indexTemplate.Execute(
 		&buf,
@@ -283,14 +285,14 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 			ActiveCount string
 			Team        *team
 			CocUrl      string
-			SessionData []byte
+			SessionData *SessionData
 		}{
 			c.CaptchaSitekey,
 			userCount.String(),
 			activeUserCount.String(),
 			ourTeam,
 			c.CocUrl,
-			session,
+			sessionData,
 		},
 	)
 	if err != nil {
