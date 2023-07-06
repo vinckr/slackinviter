@@ -1,14 +1,13 @@
 async function getSession() {
-  const url = "https://auth.slackinviter.vinckr.com/sessions/whoami"; // Replace with the actual URL
+  const url = "https://auth.slackinviter.vinckr.com/sessions/whoami";
 
   try {
-    const response = await fetch(url, { credentials: "include" });
-    if (response.ok) {
-      const data = await response.json();
-      console.log(data); // Session object
-    } else {
-      throw new Error(`Request failed with status ${response.status}`);
-    }
+    fetch(url, {
+      method: "GET",
+      credentials: "include",
+    })
+      .then((response) => response.json())
+      .then((data) => console.log(data));
   } catch (error) {
     console.error(error.message); // Error message
   }
