@@ -2,10 +2,14 @@ async function getSession() {
   const url = "https://auth.slackinviter.vinckr.com/sessions/whoami"; // Replace with the actual URL
 
   try {
-    const response = await fetch(url, { credentials: "include" });
+    const response = await fetch(url, {
+      credentials: "include",
+      mode: "no-cors",
+    });
+    console.log("response: " + response); // Response object
     if (response.ok) {
       const data = await response.json();
-      console.log(data); // Session object
+      console.log("session data: " + data); // Session object
       fetch("/sessiondata", {
         method: "POST",
         headers: {

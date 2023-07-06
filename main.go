@@ -243,7 +243,7 @@ func handleSessionData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build the session data struct
-	sessionData := SessionData{
+	var sessionData = SessionData{
 		Identity: Identity{
 			Traits: Traits{
 				Email: traitsData["email"].(string),
