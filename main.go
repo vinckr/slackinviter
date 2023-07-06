@@ -224,16 +224,19 @@ const (
 // handler for the AJAX request to get session data
 func getSessionData(w http.ResponseWriter, r *http.Request) {
 	// Read the request body
+	log.Println(w, "getting session data")
 	bodyDecoder := json.NewDecoder(r.Body)
-	var requestData map[string]interface{}
+	var requestData struct {
+		Data map[string]interface{} `json:"data"`
+	}
 	err := bodyDecoder.Decode(&requestData)
 	if err != nil {
 		log.Println(w, err, "error parsing request body", http.StatusBadRequest)
 		return
 	}
 
-	// Use the requestData["data"] to get the session data
-	sessionDataBytes, err := json.Marshal(requestData["data"])
+	// Use the requestData.Data to get the session data
+	sessionDataBytes, err := json.Marshal(requestData.Data)
 	if err != nil {
 		log.Println(w, err, "error unmarshaling session data", http.StatusInternalServerError)
 		return
@@ -259,12 +262,11 @@ func getSessionData(w http.ResponseWriter, r *http.Request) {
 
 // homepage renders the homepage
 func homepage(w http.ResponseWriter, r *http.Request) {
+	getSessionData(w, r)
 	counter.Incr(1)
 	hitsPerMinute.Set(counter.Rate())
 	requests.Add(1)
-
 	// Check if session data is available in the request context
-	getSessionData(w, r)
 	session, ok := r.Context().Value(sessionDataKey).(SessionData)
 	if !ok {
 		log.Println("session data not found in request context")
