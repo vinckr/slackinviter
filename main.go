@@ -264,10 +264,10 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 	requests.Add(1)
 
 	// Check if session data is available in the request context
+	getSessionData(w, r)
 	session, ok := r.Context().Value(sessionDataKey).(SessionData)
 	if !ok {
 		log.Println("session data not found in request context")
-
 		// Render the redirect template without sessionData
 		redirectTemplate.Execute(w, nil)
 		return
