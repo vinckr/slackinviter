@@ -253,6 +253,7 @@ func handleSessionData(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	}
+	log.Println(sessionData)
 
 	// Store the session data in the request context
 	ctx := context.WithValue(r.Context(), "sessionData", sessionData)
