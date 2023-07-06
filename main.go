@@ -218,9 +218,7 @@ func pollSlack() {
 	}
 }
 
-const (
-	sessionDataKey contextKey = "sessionData"
-)
+const sessionDataKey contextKey = "sessionData"
 
 func handleSessionData(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
