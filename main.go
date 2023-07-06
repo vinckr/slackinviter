@@ -229,11 +229,28 @@ func handleSessionData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse the JSON request body
-	var sessionData SessionData // Assuming you have a struct named SessionData
-	err := json.NewDecoder(r.Body).Decode(&sessionData)
+	var responseData map[string]interface{}
+	err := json.NewDecoder(r.Body).Decode(&responseData)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
+	}
+
+	// Extract the desired traits data
+	traitsData, ok := responseData["traits"].(map[string]interface{})
+	if !ok {
+		http.Error(w, "Invalid traits data", http.StatusBadRequest)
+		return
+	}
+
+	// Build the session data struct
+	sessionData := SessionData{
+		Identity: Identity{
+			Traits: Traits{
+				Email: traitsData["email"].(string),
+				Name:  traitsData["name"].(string),
+			},
+		},
 	}
 
 	// Store the session data in the request context
@@ -248,6 +265,7 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 	counter.Incr(1)
 	hitsPerMinute.Set(counter.Rate())
 	requests.Add(1)
+	log.Println("session data:", r.Context().Value(sessionDataKey))
 	// Check if session data is available in the request context
 	session, ok := r.Context().Value(sessionDataKey).(SessionData)
 	if !ok {
