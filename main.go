@@ -253,8 +253,6 @@ func handleSessionData(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	}
-	log.Println(sessionData)
-
 	// Store the session data in the request context
 	ctx := context.WithValue(r.Context(), "sessionData", sessionData)
 
@@ -269,14 +267,7 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 	requests.Add(1)
 	log.Println("session data:", r.Context().Value(sessionDataKey))
 	// Check if session data is available in the request context
-	session, ok := r.Context().Value(sessionDataKey).(SessionData)
-	if !ok {
-		log.Println("session data not found in request context")
-		// Render the redirect template without sessionData
-		redirectTemplate.Execute(w, nil)
-		return
-	}
-
+	session := r.Context().Value(sessionDataKey).(SessionData)
 	// Retrieve session data from the request context
 	sessionData := &SessionData{
 		Identity: Identity{
@@ -286,7 +277,6 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	}
-
 	// Render the index template with sessionData
 	renderTemplate(w, sessionData)
 }
