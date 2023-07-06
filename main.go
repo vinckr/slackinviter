@@ -19,13 +19,8 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	badge "github.com/narqo/go-badge"
 	"github.com/nlopes/slack"
-	ory "github.com/ory/client-go"
 	"github.com/paulbellamy/ratecounter"
 )
-
-type App struct {
-	ory *ory.APIClient
-}
 
 var indexTemplate = template.Must(template.New("index.tmpl").ParseFiles("templates/index.tmpl"))
 var redirectTemplate = template.Must(template.New("redirect.tmpl").ParseFiles("templates/redirect.tmpl"))
@@ -55,9 +50,17 @@ var (
 
 var c Specification
 
-type SessionData struct {
+type Traits struct {
 	Email string
 	Name  string
+}
+
+type Identity struct {
+	Traits Traits
+}
+
+type SessionData struct {
+	Identity Identity
 }
 
 // Specification is the config struct
@@ -71,6 +74,8 @@ type Specification struct {
 	EnforceHTTPS   bool
 	Debug          bool // toggles nlopes/slack client's debug flag
 }
+
+type contextKey string
 
 func init() {
 	var showUsage = flag.Bool("h", false, "Show usage")
@@ -127,67 +132,17 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	buf.WriteTo(w)
 }
 
-// save the cookies for any upstream calls to the Ory apis
-func withCookies(ctx context.Context, v string) context.Context {
-	return context.WithValue(ctx, "req.cookies", v)
-}
-
-func getCookies(ctx context.Context) string {
-	return ctx.Value("req.cookies").(string)
-}
-
-// save the session to display it on the dashboard
-func withSession(ctx context.Context, v *ory.Session) context.Context {
-	return context.WithValue(ctx, "req.session", v)
-}
-
-func getSession(ctx context.Context) *ory.Session {
-	return ctx.Value("req.session").(*ory.Session)
-}
-
 func main() {
 	go pollSlack()
-	config := ory.NewConfiguration()
-	config.Servers = ory.ServerConfigurations{{URL: "https://project.console.ory.sh"}}
-	app := &App{
-		ory: ory.NewAPIClient(config),
-	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/invite/", handleInvite)
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
-	mux.HandleFunc("/", app.sessionMiddleware(enforceHTTPSFunc(homepage)))
+	mux.HandleFunc("/", enforceHTTPSFunc(homepage))
 	mux.HandleFunc("/badge.svg", handleBadge)
 	mux.Handle("/debug/vars", http.DefaultServeMux)
 	err := http.ListenAndServe(":"+c.Port, handlers.CombinedLoggingHandler(os.Stdout, mux))
 	if err != nil {
 		log.Fatal(err.Error())
-	}
-}
-
-func (app *App) sessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(writer http.ResponseWriter, request *http.Request) {
-		// this passes all request.Cookies to `ToSession` function
-		cookies := request.Header.Get("Cookie")
-		// check if we have a session
-		session, _, err := app.ory.FrontendApi.ToSession(request.Context()).Cookie(cookies).Execute()
-		if (err != nil && session == nil) || (err == nil && !*session.Active) {
-			// Render a separate page with a button to redirect the user to the login page
-			writer.WriteHeader(http.StatusOK)
-			writer.Header().Set("Content-Type", "text/html; charset=utf-8")
-			err = redirectTemplate.Execute(writer, nil)
-			if err != nil {
-				http.Error(writer, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			return
-		}
-
-		ctx := withCookies(request.Context(), cookies)
-		ctx = withSession(ctx, session)
-
-		// continue to the requested page
-		next.ServeHTTP(writer, request.WithContext(ctx))
 	}
 }
 
@@ -262,20 +217,78 @@ func pollSlack() {
 	}
 }
 
-// Homepage renders the homepage
+const (
+	sessionDataKey contextKey = "sessionData"
+)
+
+// handler for the AJAX request to get session data
+func getSessionData(w http.ResponseWriter, r *http.Request) {
+	// Read the request body
+	bodyDecoder := json.NewDecoder(r.Body)
+	var requestData map[string]interface{}
+	err := bodyDecoder.Decode(&requestData)
+	if err != nil {
+		log.Println(w, err, "error parsing request body", http.StatusBadRequest)
+		return
+	}
+
+	// Use the requestData["data"] to get the session data
+	sessionDataBytes, err := json.Marshal(requestData["data"])
+	if err != nil {
+		log.Println(w, err, "error unmarshaling session data", http.StatusInternalServerError)
+		return
+	}
+
+	// Store the session data in the request context
+	var sessionData SessionData
+	err = json.Unmarshal(sessionDataBytes, &sessionData)
+	if err != nil {
+		log.Println(w, err, "error unmarshaling session data", http.StatusInternalServerError)
+		return
+	}
+
+	// Store the session data in the request context
+	ctx := context.WithValue(r.Context(), sessionDataKey, sessionData)
+
+	// Return the session data if needed
+	// ...
+
+	// Call the homepage function with the updated context
+	homepage(w, r.WithContext(ctx))
+}
+
+// homepage renders the homepage
 func homepage(w http.ResponseWriter, r *http.Request) {
 	counter.Incr(1)
 	hitsPerMinute.Set(counter.Rate())
 	requests.Add(1)
 
-	// Get session data
-	session := getSession(r.Context())
-	traits := session.Identity.Traits.(map[string]interface{})
-	sessionData := &SessionData{
-		Email: traits["email"].(string),
-		Name:  traits["name"].(string),
+	// Check if session data is available in the request context
+	session, ok := r.Context().Value(sessionDataKey).(SessionData)
+	if !ok {
+		log.Println("session data not found in request context")
+
+		// Render the redirect template without sessionData
+		redirectTemplate.Execute(w, nil)
+		return
 	}
 
+	// Retrieve session data from the request context
+	sessionData := &SessionData{
+		Identity: Identity{
+			Traits: Traits{
+				Email: session.Identity.Traits.Email,
+				Name:  session.Identity.Traits.Name,
+			},
+		},
+	}
+
+	// Render the index template with sessionData
+	renderTemplate(w, sessionData)
+}
+
+// renderTemplate executes the index template with the provided sessionData
+func renderTemplate(w http.ResponseWriter, sessionData *SessionData) {
 	var buf bytes.Buffer
 	err := indexTemplate.Execute(
 		&buf,
@@ -300,6 +313,7 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error rendering template :-(", http.StatusInternalServerError)
 		return
 	}
+
 	// Set the header and write the buffer to the http.ResponseWriter
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	buf.WriteTo(w)
