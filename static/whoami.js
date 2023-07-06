@@ -6,7 +6,7 @@ async function getSession() {
     if (response.ok) {
       const data = await response.json();
       console.log(data); // Session object
-      await fetch("/sessiondata", {
+      fetch("/sessiondata", {
         method: "POST",
         headers: {
           Accept: "application/json",
