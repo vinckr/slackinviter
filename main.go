@@ -140,6 +140,7 @@ func main() {
 	mux.HandleFunc("/", enforceHTTPSFunc(homepage))
 	mux.HandleFunc("/badge.svg", handleBadge)
 	mux.Handle("/debug/vars", http.DefaultServeMux)
+	mux.HandleFunc("/sessiondata", handleSessionData)
 	err := http.ListenAndServe(":"+c.Port, handlers.CombinedLoggingHandler(os.Stdout, mux))
 	if err != nil {
 		log.Fatal(err.Error())
@@ -221,40 +222,22 @@ const (
 	sessionDataKey contextKey = "sessionData"
 )
 
-// handler for the AJAX request to get session data
-func getSessionData(w http.ResponseWriter, r *http.Request) {
-	// Read the request body
-	log.Println(w, "getting session data")
-	bodyDecoder := json.NewDecoder(r.Body)
-	var requestData struct {
-		Data map[string]interface{} `json:"data"`
-	}
-	err := bodyDecoder.Decode(&requestData)
-	if err != nil {
-		log.Println(w, err, "error parsing request body", http.StatusBadRequest)
+func handleSessionData(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Use the requestData.Data to get the session data
-	sessionDataBytes, err := json.Marshal(requestData.Data)
+	// Parse the JSON request body
+	var sessionData SessionData // Assuming you have a struct named SessionData
+	err := json.NewDecoder(r.Body).Decode(&sessionData)
 	if err != nil {
-		log.Println(w, err, "error unmarshaling session data", http.StatusInternalServerError)
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
 	// Store the session data in the request context
-	var sessionData SessionData
-	err = json.Unmarshal(sessionDataBytes, &sessionData)
-	if err != nil {
-		log.Println(w, err, "error unmarshaling session data", http.StatusInternalServerError)
-		return
-	}
-
-	// Store the session data in the request context
-	ctx := context.WithValue(r.Context(), sessionDataKey, sessionData)
-
-	// Return the session data if needed
-	// ...
+	ctx := context.WithValue(r.Context(), "sessionData", sessionData)
 
 	// Call the homepage function with the updated context
 	homepage(w, r.WithContext(ctx))
@@ -262,7 +245,6 @@ func getSessionData(w http.ResponseWriter, r *http.Request) {
 
 // homepage renders the homepage
 func homepage(w http.ResponseWriter, r *http.Request) {
-	getSessionData(w, r)
 	counter.Incr(1)
 	hitsPerMinute.Set(counter.Rate())
 	requests.Add(1)
