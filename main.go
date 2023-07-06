@@ -137,7 +137,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/invite/", handleInvite)
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
-	mux.HandleFunc("/", enforceHTTPSFunc(homepage))
+	mux.HandleFunc("/", enforceHTTPSFunc(redirectPage))
 	mux.HandleFunc("/badge.svg", handleBadge)
 	mux.Handle("/debug/vars", http.DefaultServeMux)
 	mux.HandleFunc("/sessiondata", handleSessionData)
@@ -287,6 +287,17 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 
 	// Render the index template with sessionData
 	renderTemplate(w, sessionData)
+}
+
+// homepage renders the redirect page
+func redirectPage(w http.ResponseWriter, r *http.Request) {
+	counter.Incr(1)
+	hitsPerMinute.Set(counter.Rate())
+	requests.Add(1)
+	log.Println("session data:", r.Context().Value(sessionDataKey))
+
+	// Render the redirect template without sessionData
+	redirectTemplate.Execute(w, nil)
 }
 
 // renderTemplate executes the index template with the provided sessionData
