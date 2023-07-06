@@ -235,7 +235,7 @@ func handleSessionData(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
-	log.Println(responseData)
+	//log.Println(responseData)
 
 	// Extract the desired traits data
 	traitsData, ok := responseData["traits"].(map[string]interface{})
@@ -253,7 +253,7 @@ func handleSessionData(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	}
-	log.Println(sessionData)
+	log.Println("session data in handleSessionData:", sessionData)
 	// Store the session data in the request context
 	ctx := context.WithValue(r.Context(), "sessionData", sessionData)
 
