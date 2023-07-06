@@ -1,13 +1,16 @@
-console.log("whoami.js");
-
 async function getSession() {
   const url = "https://auth.slackinviter.vinckr.com/sessions/whoami"; // Replace with the actual URL
 
   try {
-    const response = await axios.get(url, { withCredentials: true });
-    console.log(response.data); // Session object
+    const response = await fetch(url, { credentials: "include" });
+    if (response.ok) {
+      const data = await response.json();
+      console.log(data); // Session object
+    } else {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
   } catch (error) {
-    console.error(error.response.status, error.response.data); // Error response
+    console.error(error.message); // Error message
   }
 }
 
