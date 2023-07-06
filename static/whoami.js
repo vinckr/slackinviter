@@ -1,7 +1,7 @@
 console.log("whoami.js");
 
 async function getSession() {
-  const url = "https://project.console.ory.sh/sessions/whoami"; // Replace with the actual URL
+  const url = "https://auth.slackinviter.vinckr.com/sessions/whoami"; // Replace with the actual URL
 
   try {
     const response = await axios.get(url, { withCredentials: true });
