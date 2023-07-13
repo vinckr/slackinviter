@@ -233,7 +233,7 @@ func handleSessionData(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
-	//log.Println(responseData)
+	log.Println(responseData)
 
 	// Extract the desired traits data
 	traitsData, ok := responseData["traits"].(map[string]interface{})
