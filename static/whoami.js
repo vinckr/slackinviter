@@ -6,9 +6,9 @@ async function getSession() {
       credentials: "include",
       mode: "cors",
     });
-    console.log("response: " + response); // Response object
+    console.log("response: ", response); // Response object
     const data = await response.json();
-    console.log("session data: " + data); // Session object
+    console.log("session data: ", data); // Session object
     fetch("/sessiondata", {
       method: "POST",
       headers: {
