@@ -255,7 +255,6 @@ func handleSessionData(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Println("session data in handleSessionData:", sessionData) // debug <-- here is some issue
 	// Store the session data in the request context
-	ctx := context.WithValue(r.Context(), "sessionData", sessionData)
 
 	// Perform the redirect with sessionData as a query parameter
 	redirectURL := "/invitation?email=" + url.QueryEscape(sessionData.Identity.Traits.Email) + "&name=" + url.QueryEscape(sessionData.Identity.Traits.Name)
