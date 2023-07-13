@@ -236,7 +236,7 @@ func handleSessionData(w http.ResponseWriter, r *http.Request) {
 	log.Println("responseData", responseData)
 
 	// Extract the desired traits data
-	traitsData, ok := responseData["traits"].(map[string]interface{})
+	traitsData, ok := responseData["identity"].(map[string]interface{})["traits"].(map[string]interface{})
 	if !ok {
 		http.Error(w, "Invalid traits data", http.StatusBadRequest)
 		return
