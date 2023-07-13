@@ -4,7 +4,7 @@ async function getSession() {
   try {
     const response = await fetch(url, {
       credentials: "include",
-      mode: "no-cors",
+      mode: "cors",
     });
     console.log("response: " + response); // Response object
     if (response.ok) {
@@ -22,4 +22,5 @@ async function getSession() {
     console.error(error.message); // Error message
   }
 }
+
 getSession();

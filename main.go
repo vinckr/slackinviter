@@ -251,7 +251,7 @@ func handleSessionData(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	}
-	log.Println("session data in handleSessionData:", sessionData)
+	log.Println("session data in handleSessionData:", sessionData) // debug <-- here is some issue
 	// Store the session data in the request context
 	ctx := context.WithValue(r.Context(), "sessionData", sessionData)
 
@@ -280,7 +280,7 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, sessionData)
 }
 
-// homepage renders the redirect page
+// renders the redirect page
 func redirectPage(w http.ResponseWriter, r *http.Request) {
 	counter.Incr(1)
 	hitsPerMinute.Set(counter.Rate())
