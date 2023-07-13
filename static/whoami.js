@@ -7,17 +7,15 @@ async function getSession() {
       mode: "cors",
     });
     console.log("response: " + response); // Response object
-    if (response.ok) {
-      const data = await response.json();
-      console.log("session data: " + data); // Session object
-      fetch("/sessiondata", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-    }
+    const data = await response.json();
+    console.log("session data: " + data); // Session object
+    fetch("/sessiondata", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
   } catch (error) {
     console.error(error.message); // Error message
   }
