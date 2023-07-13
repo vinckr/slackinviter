@@ -263,6 +263,7 @@ func handleSessionData(w http.ResponseWriter, r *http.Request) {
 
 // homepage renders the homepage
 func homepage(w http.ResponseWriter, r *http.Request) {
+	log.Println("session data in homepage:", r.URL.Query().Get("email"))
 	counter.Incr(1)
 	hitsPerMinute.Set(counter.Rate())
 	requests.Add(1)
