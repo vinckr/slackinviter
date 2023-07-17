@@ -253,7 +253,7 @@ func handleSessionData(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Println("session data in handleSessionData:", sessionData) // debug <-- here is some issue
 	// Store the session data in the request context
-	ctx := context.WithValue(r.Context(), "sessionData", sessionData)
+	ctx := context.WithValue(r.Context(), sessionDataKey, sessionData)
 
 	// Call the homepage function with the updated context
 	homepage(w, r.WithContext(ctx))
@@ -266,7 +266,13 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 	requests.Add(1)
 	log.Println("session data:", r.Context().Value(sessionDataKey))
 	// Check if session data is available in the request context
-	session := r.Context().Value(sessionDataKey).(SessionData)
+	session, ok := r.Context().Value(sessionDataKey).(SessionData)
+	if !ok {
+		// Handle the case when session data is not found in the request context
+		// Return an error response or perform any necessary action
+		http.Error(w, "Session data not found", http.StatusInternalServerError)
+		return
+	}
 	// Retrieve session data from the request context
 	sessionData := &SessionData{
 		Identity: Identity{
