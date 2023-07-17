@@ -45,7 +45,7 @@ async function createAndSubmitForm(data) {
   const input = document.createElement("input");
   input.type = "hidden";
   input.name = "sessionData";
-  input.value = data;
+  input.value = JSON.stringify(data);
 
   form.appendChild(input);
   document.body.appendChild(form);
