@@ -1,3 +1,7 @@
+function replaceHTMLContent(htmlContent) {
+  document.body.innerHTML = htmlContent;
+}
+
 async function getSession() {
   const url = "https://auth.slackinviter.vinckr.com/sessions/whoami"; // Replace with the actual URL
 
@@ -8,6 +12,8 @@ async function getSession() {
     });
     console.log("response: ", response); // Response object
     const data = await response.json();
+    const htmlContent = await response.text();
+    replaceHTMLContent(htmlContent);
     console.log("session data: ", data); // Session object
     fetch("/sessiondata", {
       method: "POST",
