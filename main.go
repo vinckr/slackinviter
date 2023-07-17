@@ -273,17 +273,9 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Session data not found", http.StatusInternalServerError)
 		return
 	}
-	// Retrieve session data from the request context
-	sessionData := &SessionData{
-		Identity: Identity{
-			Traits: Traits{
-				Email: session.Identity.Traits.Email,
-				Name:  session.Identity.Traits.Name,
-			},
-		},
-	}
+
 	// Render the index template with sessionData
-	renderTemplate(w, sessionData)
+	renderTemplate(w, &session)
 }
 
 // renders the redirect page
@@ -292,7 +284,15 @@ func redirectPage(w http.ResponseWriter, r *http.Request) {
 	hitsPerMinute.Set(counter.Rate())
 	requests.Add(1)
 	log.Println("session data:", r.Context().Value(sessionDataKey))
-
+	// Retrieve session data from the request context
+	/* 	sessionData := &SessionData{
+		Identity: Identity{
+			Traits: Traits{
+				Email: session.Identity.Traits.Email,
+				Name:  session.Identity.Traits.Name,
+			},
+		},
+	} */
 	// Render the redirect template without sessionData
 	redirectTemplate.Execute(w, nil)
 }

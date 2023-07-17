@@ -1,4 +1,5 @@
 function replaceHTMLContent(htmlContent) {
+  console.log("htmlContent: ", htmlContent);
   document.body.innerHTML = htmlContent;
 }
 
