@@ -32,7 +32,7 @@ function createAndSubmitForm(data) {
   const input = document.createElement("input");
   input.type = "hidden";
   input.name = "sessionData";
-  input.value = JSON.stringify(data);
+  input.value = data;
 
   form.appendChild(input);
   document.body.appendChild(form);
