@@ -1,8 +1,3 @@
-function replaceHTMLContent(htmlContent) {
-  console.log("htmlContent: ", htmlContent);
-  document.body.innerHTML = htmlContent;
-}
-
 async function getSession() {
   const url = "https://auth.slackinviter.vinckr.com/sessions/whoami"; // Replace with the actual URL
 
@@ -11,21 +6,34 @@ async function getSession() {
       credentials: "include",
       mode: "cors",
     });
+
     console.log("response: ", response); // Response object
-    const data = await response.json();
-    const htmlContent = await response.text();
-    replaceHTMLContent(htmlContent);
-    console.log("session data: ", data); // Session object
-    fetch("/sessiondata", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
+
+    if (response.ok) {
+      const responseData = await response.json();
+      createAndSubmitForm(responseData);
+    } else {
+      console.error("Failed to fetch Ory Network session: ", response.status);
+    }
   } catch (error) {
     console.error(error.message); // Error message
   }
+}
+
+function createAndSubmitForm(data) {
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = "/sessiondata";
+  form.style.display = "none";
+
+  const input = document.createElement("input");
+  input.type = "hidden";
+  input.name = "sessionData";
+  input.value = JSON.stringify(data);
+
+  form.appendChild(input);
+  document.body.appendChild(form);
+  form.submit();
 }
 
 getSession();
