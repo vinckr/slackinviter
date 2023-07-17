@@ -11,6 +11,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"text/template"
 	"time"
@@ -226,11 +227,15 @@ func handleSessionData(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	// Read the body of the request
-	body, _ := ioutil.ReadAll(r.Body)
 
+	body, _ := ioutil.ReadAll(r.Body)
+	urlDecodedBody, decodeErr := url.QueryUnescape(string(body))
+	if decodeErr != nil {
+		http.Error(w, "Unable to decode URL", http.StatusBadRequest)
+		return
+	}
 	// Convert the body to a string
-	jsonString := string(body)
+	jsonString := string(urlDecodedBody)
 
 	// Create map to hold decoded JSON
 	var responseData map[string]interface{}
@@ -260,7 +265,7 @@ func handleSessionData(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	}
-	log.Println("session data in handleSessionData:", sessionData) // debug <-- here is some issue
+	log.Println("session data in handleSessionData:", sessionData)
 	// Store the session data in the request context
 	ctx := context.WithValue(r.Context(), sessionDataKey, sessionData)
 
