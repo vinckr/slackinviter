@@ -1,3 +1,15 @@
+async function whoami() {
+  try {
+    const sessionData = await getSession();
+    createAndSubmitForm(sessionData);
+  } catch (error) {
+    console.error(
+      "Error during session retrieval and form submission: ",
+      error
+    );
+  }
+}
+
 async function getSession() {
   const url = "https://auth.slackinviter.vinckr.com/sessions/whoami"; // Replace with the actual URL
   console.log("getting session data");
@@ -59,12 +71,4 @@ async function createAndSubmitForm(data) {
   form.submit();
 }
 
-// getSession
-getSession()
-  .then(createAndSubmitForm)
-  .catch((error) => {
-    console.error(
-      "Error during session retrieval and form submission: ",
-      error
-    );
-  });
+whoami();
