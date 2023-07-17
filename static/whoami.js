@@ -6,10 +6,8 @@ async function getSession() {
       credentials: "include",
       mode: "cors",
     });
-
-    console.log("response: ", response); // Response object
-
     if (response.ok) {
+      console.log("response: ", response); // Response object
       const responseData = await response.json();
       createAndSubmitForm(responseData);
     } else {
