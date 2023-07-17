@@ -23,7 +23,7 @@ async function getSession() {
   }
 }
 
-function createAndSubmitForm(data) {
+async function createAndSubmitForm(data) {
   const form = document.createElement("form");
   form.method = "POST";
   form.action = "/sessiondata";
