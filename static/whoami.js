@@ -1,5 +1,6 @@
 async function getSession() {
   const url = "https://auth.slackinviter.vinckr.com/sessions/whoami"; // Replace with the actual URL
+  console.log("getting session data");
 
   try {
     const response = await fetch(url, {
