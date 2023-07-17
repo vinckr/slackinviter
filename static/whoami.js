@@ -33,6 +33,24 @@ function createAndSubmitForm(data) {
 
   form.appendChild(input);
   document.body.appendChild(form);
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const formData = new FormData(form);
+    try {
+      const response = await fetch(form.action, {
+        method: form.method,
+        body: formData,
+      });
+      if (response.ok) {
+        const htmlContent = await response.text();
+        document.body.innerHTML = htmlContent;
+      } else {
+        console.error("Failed to fetch HTML content: ", response.status);
+      }
+    } catch (error) {
+      console.error("Error while fetching HTML content: ", error.message);
+    }
+  });
   form.submit();
 }
 
