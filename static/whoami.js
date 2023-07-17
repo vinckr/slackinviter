@@ -6,15 +6,20 @@ async function getSession() {
       credentials: "include",
       mode: "cors",
     });
+
+    console.log("response: ", response); // Response object
+
     if (response.ok) {
-      console.log("response: ", response); // Response object
       const responseData = await response.json();
-      createAndSubmitForm(responseData);
+      return responseData; // Resolve the promise with the response data
     } else {
-      console.error("Failed to fetch Ory Network session: ", response.status);
+      throw new Error(
+        "Failed to fetch Ory Network session: " + response.status
+      );
     }
   } catch (error) {
     console.error(error.message); // Error message
+    throw error; // Rethrow the error to propagate it to the caller
   }
 }
 
@@ -43,13 +48,22 @@ function createAndSubmitForm(data) {
         const htmlContent = await response.text();
         document.body.innerHTML = htmlContent;
       } else {
-        console.error("Failed to fetch HTML content: ", response.status);
+        throw new Error("Failed to fetch HTML content: " + response.status);
       }
     } catch (error) {
       console.error("Error while fetching HTML content: ", error.message);
+      throw error; // Rethrow the error to propagate it to the caller
     }
   });
   form.submit();
 }
 
-getSession();
+// getSession
+getSession()
+  .then(createAndSubmitForm)
+  .catch((error) => {
+    console.error(
+      "Error during session retrieval and form submission: ",
+      error
+    );
+  });
