@@ -10,6 +10,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"text/template"
 	"time"
@@ -141,6 +142,7 @@ func main() {
 	mux.HandleFunc("/badge.svg", handleBadge)
 	mux.Handle("/debug/vars", http.DefaultServeMux)
 	mux.HandleFunc("/sessiondata", handleSessionData)
+	mux.HandleFunc("/invitation", homepage)
 	err := http.ListenAndServe(":"+c.Port, handlers.CombinedLoggingHandler(os.Stdout, mux))
 	if err != nil {
 		log.Fatal(err.Error())
@@ -253,29 +255,32 @@ func handleSessionData(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Println("session data in handleSessionData:", sessionData) // debug <-- here is some issue
 	// Store the session data in the request context
-	ctx := context.WithValue(r.Context(), "sessionData", sessionData)
 
-	// Call the homepage function with the updated context
-	homepage(w, r.WithContext(ctx))
+	// Perform the redirect with sessionData as a query parameter
+	redirectURL := "/invitation?email=" + url.QueryEscape(sessionData.Identity.Traits.Email) + "&name=" + url.QueryEscape(sessionData.Identity.Traits.Name)
+	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 }
 
 // homepage renders the homepage
 func homepage(w http.ResponseWriter, r *http.Request) {
+	log.Println("session data in homepage:", r.URL.Query().Get("email"))
 	counter.Incr(1)
 	hitsPerMinute.Set(counter.Rate())
 	requests.Add(1)
-	log.Println("session data:", r.Context().Value(sessionDataKey))
-	// Check if session data is available in the request context
-	session := r.Context().Value(sessionDataKey).(SessionData)
-	// Retrieve session data from the request context
+	// Check if session data is available in the query parameters
+	email := r.URL.Query().Get("email")
+	name := r.URL.Query().Get("name")
+
+	// Build the session data struct
 	sessionData := &SessionData{
 		Identity: Identity{
 			Traits: Traits{
-				Email: session.Identity.Traits.Email,
-				Name:  session.Identity.Traits.Name,
+				Email: email,
+				Name:  name,
 			},
 		},
 	}
+	log.Println("rendering homepage")
 	// Render the index template with sessionData
 	renderTemplate(w, sessionData)
 }
