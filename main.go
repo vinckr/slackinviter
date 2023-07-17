@@ -7,6 +7,7 @@ import (
 	"expvar"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -225,14 +226,22 @@ func handleSessionData(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	// Read the body of the request
+	body, _ := ioutil.ReadAll(r.Body)
 
-	// Parse the JSON request body
+	// Convert the body to a string
+	jsonString := string(body)
+
+	// Create map to hold decoded JSON
 	var responseData map[string]interface{}
-	err := json.NewDecoder(r.Body).Decode(&responseData)
+
+	// Decode JSON string
+	err := json.Unmarshal([]byte(jsonString), &responseData)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
+
 	log.Println("responseData", responseData)
 
 	// Extract the desired traits data
