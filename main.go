@@ -144,7 +144,7 @@ func main() {
 	mux.HandleFunc("/", enforceHTTPSFunc(redirectPage))
 	mux.HandleFunc("/badge.svg", handleBadge)
 	mux.Handle("/debug/vars", http.DefaultServeMux)
-	mux.HandleFunc("/sessiondata", handleSession)
+	mux.HandleFunc("/invitation", handleSession)
 	err := http.ListenAndServe(":"+c.Port, handlers.CombinedLoggingHandler(os.Stdout, mux))
 	if err != nil {
 		log.Fatal(err.Error())

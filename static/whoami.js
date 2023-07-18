@@ -47,7 +47,7 @@ async function getSession() {
 async function createAndSubmitForm(sessionData) {
   const form = document.createElement("form");
   form.method = "POST";
-  form.action = "/sessiondata";
+  form.action = "/invitation";
   form.style.display = "none";
   const input = document.createElement("input");
   input.type = "hidden";
