@@ -10,17 +10,15 @@ async function whoami() {
     );
   }
 }
-
 async function getSession() {
   const url = "https://auth.slackinviter.vinckr.com/sessions/whoami"; // Replace with the actual URL
   console.log("getting session data");
-
   try {
-    /*     const response = await fetch(url, {
+    const response = await fetch(url, {
       credentials: "include",
       mode: "cors",
-    }); */
-    const response = {
+    });
+    /*     const response = {
       id: "d4f5bb7e-d937-4d87-a0b7-0927312cdebd",
       active: true,
       expires_at: "2023-07-20T12:32:17.409035Z",
@@ -29,12 +27,13 @@ async function getSession() {
         state: "active",
         traits: { email: "vincent+test123@ory.sh", name: "asd" },
       },
-    };
-    console.log("response: ", response); // Response object
+    }; */
+
+    console.log("response: ", response);
 
     if (response.ok) {
       const responseData = await response.json();
-      return responseData; // Resolve the promise with the response data
+      return responseData;
     } else {
       throw new Error(
         "Failed to fetch Ory Network session: " + response.status
@@ -45,18 +44,15 @@ async function getSession() {
     throw error; // Rethrow the error to propagate it to the caller
   }
 }
-
-async function createAndSubmitForm(data) {
+async function createAndSubmitForm(sessionData) {
   const form = document.createElement("form");
   form.method = "POST";
   form.action = "/sessiondata";
   form.style.display = "none";
-
   const input = document.createElement("input");
   input.type = "hidden";
   input.name = "sessionData";
-  input.value = JSON.stringify(data);
-
+  input.value = JSON.stringify(sessionData);
   form.appendChild(input);
   document.body.appendChild(form);
   form.addEventListener("submit", async (event) => {
@@ -80,5 +76,7 @@ async function createAndSubmitForm(data) {
   });
   form.submit();
 }
-
-whoami();
+document.addEventListener("DOMContentLoaded", () => {
+  // Execute when the document has finished loading
+  whoami();
+});

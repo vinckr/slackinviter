@@ -11,7 +11,9 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"text/template"
 	"time"
 
@@ -51,6 +53,11 @@ var (
 
 var c Specification
 
+// wrapper for Session Data
+type SessionResponse struct {
+	SessionData SessionData `json:"sessionData"`
+}
+
 type SessionData struct {
 	Identity struct {
 		Traits struct {
@@ -62,12 +69,12 @@ type SessionData struct {
 
 // Specification is the config struct
 type Specification struct {
-	Port           string `envconfig:"PORT" required:"true"`
-	CaptchaSitekey string `required:"true"`
-	CaptchaSecret  string `required:"true"`
-	SlackToken     string `required:"true"`
-	CocUrl         string `required:"false" default:"http://coc.golangbridge.org/"`
-	SessionData    json.RawMessage
+	Port           string        `envconfig:"PORT" required:"true"`
+	CaptchaSitekey string        `required:"true"`
+	CaptchaSecret  string        `required:"true"`
+	SlackToken     string        `required:"true"`
+	CocUrl         string        `required:"false" default:"http://coc.golangbridge.org/"`
+	SessionData    []SessionData `json:"sessionData"`
 	EnforceHTTPS   bool
 	Debug          bool // toggles nlopes/slack client's debug flag
 }
@@ -215,53 +222,40 @@ func pollSlack() {
 	}
 }
 
-const sessionDataKey contextKey = "sessionData"
-
 func handleSession(w http.ResponseWriter, r *http.Request) {
+	var sessionData SessionData
+
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
 	// Read the request body
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Error reading request body",
 			http.StatusInternalServerError)
 	}
-
-	// Parse the request body
-	var sessionData SessionData
-	err = json.Unmarshal(body, &sessionData)
+	// convert body to a string and trim the leading "sessionData="
+	bodyString := strings.TrimPrefix(string(body), "sessionData=")
+	// Decode the URL-encoded string
+	decodedString, err := url.QueryUnescape(bodyString)
 	if err != nil {
-		http.Error(w, "Error parsing JSON", http.StatusInternalServerError)
+		log.Println("Error decoding URL-encoded string:", err)
+		return
 	}
-
-	// Store the session data in the request context
-	ctx := context.WithValue(r.Context(), sessionDataKey, sessionData)
-
-	// Call the homepage function with the updated context
-	homepage(w, r.WithContext(ctx))
-}
-
-// homepage renders the homepage
-func homepage(w http.ResponseWriter, r *http.Request) {
+	// Unmarshal the JSON-encoded decodedString into sessionData
+	err = json.Unmarshal(([]byte(decodedString)), &sessionData)
+	if err != nil {
+		log.Println("Error unmarshalling JSON into sessionData:", err)
+		return
+	}
+	// set other template variables
 	counter.Incr(1)
 	hitsPerMinute.Set(counter.Rate())
 	requests.Add(1)
-	log.Println("session data:", r.Context().Value(sessionDataKey))
-
-	// Check if session data is available in the request context
-	sessionData, ok := r.Context().Value(sessionDataKey).(SessionData)
-	if !ok {
-		// Handle the case when session data is not found in the request context
-		// Return an error response or perform any necessary action
-		http.Error(w, "Session data not found", http.StatusInternalServerError)
-		return
-	}
 	// Render the index template with sessionData
 	var buf bytes.Buffer
-	err := indexTemplate.Execute(
+	errRender := indexTemplate.Execute(
 		&buf,
 		struct {
 			SiteKey,
@@ -279,7 +273,7 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 			sessionData,
 		},
 	)
-	if err != nil {
+	if errRender != nil {
 		log.Println("error rendering template:", err)
 		http.Error(w, "error rendering template :-(", http.StatusInternalServerError)
 		return
@@ -290,22 +284,11 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 	buf.WriteTo(w)
 }
 
-// renders the redirect page
+// redirectPage renders the redirect page
 func redirectPage(w http.ResponseWriter, r *http.Request) {
 	counter.Incr(1)
 	hitsPerMinute.Set(counter.Rate())
 	requests.Add(1)
-	log.Println("session data:", r.Context().Value(sessionDataKey))
-	// Retrieve session data from the request context
-	/* 	sessionData := &SessionData{
-		Identity: Identity{
-			Traits: Traits{
-				Email: session.Identity.Traits.Email,
-				Name:  session.Identity.Traits.Name,
-			},
-		},
-	} */
-	// Render the redirect template without sessionData
 	redirectTemplate.Execute(w, nil)
 }
 
