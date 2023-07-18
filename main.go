@@ -11,7 +11,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"text/template"
 	"time"
@@ -52,17 +51,13 @@ var (
 
 var c Specification
 
-type Traits struct {
-	Email string
-	Name  string
-}
-
-type Identity struct {
-	Traits Traits
-}
-
 type SessionData struct {
-	Identity Identity
+	Identity struct {
+		Traits struct {
+			Email string `json:"email"`
+			Name  string `json:"name"`
+		} `json:"traits"`
+	} `json:"identity"`
 }
 
 // Specification is the config struct
@@ -142,7 +137,7 @@ func main() {
 	mux.HandleFunc("/", enforceHTTPSFunc(redirectPage))
 	mux.HandleFunc("/badge.svg", handleBadge)
 	mux.Handle("/debug/vars", http.DefaultServeMux)
-	mux.HandleFunc("/sessiondata", handleSessionData)
+	mux.HandleFunc("/sessiondata", handleSession)
 	err := http.ListenAndServe(":"+c.Port, handlers.CombinedLoggingHandler(os.Stdout, mux))
 	if err != nil {
 		log.Fatal(err.Error())
@@ -222,50 +217,26 @@ func pollSlack() {
 
 const sessionDataKey contextKey = "sessionData"
 
-func handleSessionData(w http.ResponseWriter, r *http.Request) {
+func handleSession(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	body, _ := ioutil.ReadAll(r.Body)
-	urlDecodedBody, decodeErr := url.QueryUnescape(string(body))
-	if decodeErr != nil {
-		http.Error(w, "Unable to decode URL", http.StatusBadRequest)
-		return
-	}
-	// Convert the body to a string
-	jsonString := string(urlDecodedBody)
-
-	// Create map to hold decoded JSON
-	var responseData map[string]interface{}
-
-	// Decode JSON string
-	err := json.Unmarshal([]byte(jsonString), &responseData)
+	// Read the request body
+	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+		http.Error(w, "Error reading request body",
+			http.StatusInternalServerError)
 	}
 
-	log.Println("responseData", responseData)
-
-	// Extract the desired traits data
-	traitsData, ok := responseData["identity"].(map[string]interface{})["traits"].(map[string]interface{})
-	if !ok {
-		http.Error(w, "Invalid traits data", http.StatusBadRequest)
-		return
+	// Parse the request body
+	var sessionData SessionData
+	err = json.Unmarshal(body, &sessionData)
+	if err != nil {
+		http.Error(w, "Error parsing JSON", http.StatusInternalServerError)
 	}
 
-	// Build the session data struct
-	var sessionData = SessionData{
-		Identity: Identity{
-			Traits: Traits{
-				Email: traitsData["email"].(string),
-				Name:  traitsData["name"].(string),
-			},
-		},
-	}
-	log.Println("session data in handleSessionData:", sessionData)
 	// Store the session data in the request context
 	ctx := context.WithValue(r.Context(), sessionDataKey, sessionData)
 
@@ -279,24 +250,44 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 	hitsPerMinute.Set(counter.Rate())
 	requests.Add(1)
 	log.Println("session data:", r.Context().Value(sessionDataKey))
+
 	// Check if session data is available in the request context
-	session, ok := r.Context().Value(sessionDataKey).(SessionData)
+	sessionData, ok := r.Context().Value(sessionDataKey).(SessionData)
 	if !ok {
 		// Handle the case when session data is not found in the request context
 		// Return an error response or perform any necessary action
 		http.Error(w, "Session data not found", http.StatusInternalServerError)
 		return
 	}
-	sessionData := &SessionData{
-		Identity: Identity{
-			Traits: Traits{
-				Email: session.Identity.Traits.Email,
-				Name:  session.Identity.Traits.Name,
-			},
-		},
-	}
 	// Render the index template with sessionData
-	renderTemplate(w, sessionData)
+	var buf bytes.Buffer
+	err := indexTemplate.Execute(
+		&buf,
+		struct {
+			SiteKey,
+			UserCount,
+			ActiveCount string
+			Team        *team
+			CocUrl      string
+			SessionData SessionData
+		}{
+			c.CaptchaSitekey,
+			userCount.String(),
+			activeUserCount.String(),
+			ourTeam,
+			c.CocUrl,
+			sessionData,
+		},
+	)
+	if err != nil {
+		log.Println("error rendering template:", err)
+		http.Error(w, "error rendering template :-(", http.StatusInternalServerError)
+		return
+	}
+
+	// Set the header and write the buffer to the http.ResponseWriter
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	buf.WriteTo(w)
 }
 
 // renders the redirect page
@@ -316,38 +307,6 @@ func redirectPage(w http.ResponseWriter, r *http.Request) {
 	} */
 	// Render the redirect template without sessionData
 	redirectTemplate.Execute(w, nil)
-}
-
-// renderTemplate executes the index template with the provided sessionData
-func renderTemplate(w http.ResponseWriter, sessionData *SessionData) {
-	var buf bytes.Buffer
-	err := indexTemplate.Execute(
-		&buf,
-		struct {
-			SiteKey,
-			UserCount,
-			ActiveCount string
-			Team        *team
-			CocUrl      string
-			SessionData *SessionData
-		}{
-			c.CaptchaSitekey,
-			userCount.String(),
-			activeUserCount.String(),
-			ourTeam,
-			c.CocUrl,
-			sessionData,
-		},
-	)
-	if err != nil {
-		log.Println("error rendering template:", err)
-		http.Error(w, "error rendering template :-(", http.StatusInternalServerError)
-		return
-	}
-
-	// Set the header and write the buffer to the http.ResponseWriter
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	buf.WriteTo(w)
 }
 
 // ShowPost renders a single post

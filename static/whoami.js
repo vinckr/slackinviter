@@ -16,11 +16,20 @@ async function getSession() {
   console.log("getting session data");
 
   try {
-    const response = await fetch(url, {
+    /*     const response = await fetch(url, {
       credentials: "include",
       mode: "cors",
-    });
-
+    }); */
+    const response = {
+      id: "d4f5bb7e-d937-4d87-a0b7-0927312cdebd",
+      active: true,
+      expires_at: "2023-07-20T12:32:17.409035Z",
+      identity: {
+        id: "eb813b51-3e69-4b72-ae91-7fa2303aa39b",
+        state: "active",
+        traits: { email: "vincent+test123@ory.sh", name: "asd" },
+      },
+    };
     console.log("response: ", response); // Response object
 
     if (response.ok) {
